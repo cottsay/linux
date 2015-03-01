@@ -36,7 +36,7 @@
 #include <linux/amlogic/hdmi_tx/hdmi_tx_cec.h>
 hdmitx_dev_t *hdmitx_device = NULL;
 
-__u16 cec_key_map[128] = {
+__u16 cec_key_map[256] = {
     KEY_SELECT, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, 0 , 0 , 0 ,//0x00
     0 , KEY_HOMEPAGE , KEY_MENU, 0, 0, KEY_BACK, 0, 0,
     0 , 0, 0, 0, 0, 0, 0, 0,//0x10
