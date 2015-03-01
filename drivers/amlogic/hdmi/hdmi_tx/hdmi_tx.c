@@ -496,6 +496,24 @@ static ssize_t show_cec_lang_config(struct device * dev, struct device_attribute
     return pos;
 }
 
+static ssize_t show_cec_osd_name(struct device * dev, struct device_attribute *attr, char * buf)
+{
+    int pos=0;
+    pos+=snprintf(buf+pos, PAGE_SIZE, "%s\n", cec_global_info.cec_node_info[cec_global_info.my_node_index].osd_name);
+    return pos;
+}
+
+static ssize_t store_cec_osd_name(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+    if(count>14){
+        count = 14;
+    }
+    strncpy(cec_global_info.cec_node_info[cec_global_info.my_node_index].osd_name, buf, count);
+    cec_global_info.cec_node_info[cec_global_info.my_node_index].osd_name[count] = '\0';
+    cec_set_osd_name_init();
+    return count;
+}
+
 /*aud_mode attr*/
 static ssize_t show_aud_mode(struct device * dev, struct device_attribute *attr, char * buf)
 {
@@ -886,6 +904,7 @@ static DEVICE_ATTR(cec, S_IWUSR | S_IRUGO, show_cec, store_cec);
 static DEVICE_ATTR(cec_config, S_IWUSR | S_IRUGO | S_IWGRP, show_cec_config, store_cec_config);
 //static DEVICE_ATTR(cec_config, S_IWUGO | S_IRUGO , NULL, store_cec_config);
 static DEVICE_ATTR(cec_lang_config, S_IWUSR | S_IRUGO | S_IWGRP, show_cec_lang_config, store_cec_lang_config);
+static DEVICE_ATTR(cec_osd_name, S_IWUSR | S_IRUGO | S_IWGRP, show_cec_osd_name, store_cec_osd_name);
 
 /*****************************
 *    hdmitx display client interface
@@ -1494,6 +1513,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
     ret=device_create_file(hdmitx_dev, &dev_attr_cec);
     ret=device_create_file(hdmitx_dev, &dev_attr_cec_config);
     ret=device_create_file(hdmitx_dev, &dev_attr_cec_lang_config);
+    ret=device_create_file(hdmitx_dev, &dev_attr_cec_osd_name);
 
     if (hdmitx_dev == NULL) {
         hdmi_print(ERR, SYS "device_create create error\n");
