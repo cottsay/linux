@@ -253,7 +253,7 @@ void cec_node_init(hdmitx_dev_t* hdmitx_device)
 
     
     for(i = 0; i < 3; i++){ 
-	    hdmi_print(INF, CEC "CEC: start poll dev\n");
+        hdmi_print(INF, CEC "CEC: start poll dev\n");
         cec_polling_online_dev(player_dev[i], &bool);
         hdmi_print(INF, CEC "player_dev[%d]:0x%x\n", i, player_dev[i]);
         if(bool == 0){  // 0 means that no any respond
@@ -293,13 +293,13 @@ void cec_node_init(hdmitx_dev_t* hdmitx_device)
 #if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
             aocec_wr_reg(CEC_LOGICAL_ADDR0, (0x1 << 4) | player_dev[i]);
 #endif
-     		hdmi_print(INF, CEC "Set logical address: %d\n", player_dev[i]);
+            hdmi_print(INF, CEC "Set logical address: %d\n", player_dev[i]);
 
             hdmi_print(INF, CEC "aml_read_reg32(P_AO_DEBUG_REG0):0x%x\n" ,aml_read_reg32(P_AO_DEBUG_REG0));
-        	if(cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status == DEVICE_MENU_INACTIVE)
-        	    break;
+            if(cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status == DEVICE_MENU_INACTIVE)
+                break;
             msleep(100);
-			cec_report_physical_address_smp();
+            cec_report_physical_address_smp();
             msleep(150);
             cec_device_vendor_id((cec_rx_message_t*)0);
 
@@ -367,11 +367,11 @@ static int cec_task(void *data)
         cec_node_init(hdmitx_device);
     }
     while (1) {
-    	if (kthread_should_stop()){
-    		break;
-    	}
-    	wait_event_interruptible(hdmitx_device->cec_wait_rx,
-		cec_global_info.cec_rx_msg_buf.rx_read_pos != cec_global_info.cec_rx_msg_buf.rx_write_pos);
+        if (kthread_should_stop()){
+            break;
+        }
+        wait_event_interruptible(hdmitx_device->cec_wait_rx,
+            cec_global_info.cec_rx_msg_buf.rx_read_pos != cec_global_info.cec_rx_msg_buf.rx_write_pos);
         cec_isr_post_process();
         //cec_usr_cmd_post_process();
     }
@@ -845,11 +845,11 @@ void cec_active_source_rx(cec_rx_message_t* pcec_message)
     phy_addr_active = (unsigned int)((pcec_message->content.msg.operands[0] << 8) |
                                     (pcec_message->content.msg.operands[1] << 0));
 
-	if(phy_addr_active == (aml_read_reg32(P_AO_DEBUG_REG1) & 0xffff)){
-	    cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_ACTIVE;
-	}else{
-	    cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_INACTIVE;
-	}
+    if(phy_addr_active == (aml_read_reg32(P_AO_DEBUG_REG1) & 0xffff)){
+        cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_ACTIVE;
+    }else{
+        cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_INACTIVE;
+    }
 }
 
 void cec_active_source_smp(void)
@@ -893,12 +893,12 @@ void cec_set_stream_path(cec_rx_message_t* pcec_message)
     phy_addr_active = (unsigned int)((pcec_message->content.msg.operands[0] << 8) |
                                     (pcec_message->content.msg.operands[1] << 0));
 
-	if(phy_addr_active == (aml_read_reg32(P_AO_DEBUG_REG1) & 0xffff)){
-	    cec_active_source_smp();
-	    cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_ACTIVE;
-	}else{
-	    cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_INACTIVE;
-	}
+    if(phy_addr_active == (aml_read_reg32(P_AO_DEBUG_REG1) & 0xffff)){
+        cec_active_source_smp();
+        cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_ACTIVE;
+    }else{
+        cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_INACTIVE;
+    }
 }
 void cec_set_system_audio_mode(void)
 {
@@ -977,8 +977,8 @@ void cec_inactive_source(void)
 
     msg[0] = ((index & 0xf) << 4) | CEC_TV_ADDR;
     msg[1] = CEC_OC_INACTIVE_SOURCE;
-	msg[2] = phy_addr_ab;
-	msg[3] = phy_addr_cd;
+    msg[2] = phy_addr_ab;
+    msg[3] = phy_addr_cd;
 
     cec_ll_tx(msg, 4);
     cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_INACTIVE;
@@ -1035,15 +1035,15 @@ void cec_set_standby(void)
     msg[1] = CEC_OC_STANDBY;
     if(hdmitx_device->cec_func_config & (1 << CEC_FUNC_MSAK)) {
         if(hdmitx_device->cec_func_config & (1 << ONE_TOUCH_STANDBY_MASK)) {
-			cec_ll_tx(msg, 2);
-		}
-	}
+            cec_ll_tx(msg, 2);
+        }
+    }
 }
 
 void cec_set_osd_name(cec_rx_message_t* pcec_message)
 {
     unsigned char index = cec_global_info.my_node_index;
-	unsigned char osd_len = strlen(cec_global_info.cec_node_info[index].osd_name);
+    unsigned char osd_len = strlen(cec_global_info.cec_node_info[index].osd_name);
     unsigned char src_log_addr = (pcec_message->content.msg.header >> 4 )&0xf;
     unsigned char msg[16];
 
@@ -1059,7 +1059,7 @@ void cec_set_osd_name(cec_rx_message_t* pcec_message)
 void cec_set_osd_name_init(void)
 {
     unsigned char index = cec_global_info.my_node_index;
-	unsigned char osd_len = strlen(cec_global_info.cec_node_info[index].osd_name);
+    unsigned char osd_len = strlen(cec_global_info.cec_node_info[index].osd_name);
     unsigned char msg[16];
 
     msg[0] = ((index & 0xf) << 4) | 0;
@@ -1095,8 +1095,8 @@ void cec_set_menu_language(cec_rx_message_t* pcec_message)
 
 void cec_handle_message(cec_rx_message_t* pcec_message)
 {
-    unsigned char	brdcst, opcode;
-    unsigned char	initiator, follower;
+    unsigned char   brdcst, opcode;
+    unsigned char   initiator, follower;
     unsigned char   operand_num;
     unsigned char   msg_length;
 
@@ -1104,9 +1104,9 @@ void cec_handle_message(cec_rx_message_t* pcec_message)
     if ((!pcec_message) || (check_cec_msg_valid(pcec_message) == 0))
         return;
 
-    initiator	= pcec_message->content.msg.header >> 4;
-    follower	= pcec_message->content.msg.header & 0x0f;
-    opcode		= pcec_message->content.msg.opcode;
+    initiator   = pcec_message->content.msg.header >> 4;
+    follower    = pcec_message->content.msg.header & 0x0f;
+    opcode          = pcec_message->content.msg.opcode;
     operand_num = pcec_message->operand_num;
     brdcst      = (follower == 0x0f);
     msg_length  = pcec_message->msg_length;
@@ -1188,11 +1188,11 @@ void cec_handle_message(cec_rx_message_t* pcec_message)
             cec_routing_change(pcec_message);
             break;
         case CEC_OC_ROUTING_INFORMATION:
-        	cec_routing_information(pcec_message);
-        	break;
+            cec_routing_information(pcec_message);
+            break;
         case CEC_OC_GIVE_AUDIO_STATUS:
-        	cec_report_audio_status();
-        	break;
+            cec_report_audio_status();
+            break;
         case CEC_OC_MENU_REQUEST:
             cec_menu_status(pcec_message);
             break;
@@ -1441,8 +1441,8 @@ void cec_usrcmd_set_active_source(void)
 
     MSG_P2(index, CEC_BROADCAST_ADDR,
             CEC_OC_ACTIVE_SOURCE,
-			phy_addr_ab,
-			phy_addr_cd);
+            phy_addr_ab,
+            phy_addr_cd);
 
     cec_ll_tx(gbl_msg, 4);
 }
@@ -1530,11 +1530,11 @@ void cec_routing_change(cec_rx_message_t* pcec_message)
     phy_addr_destination = (unsigned int)((pcec_message->content.msg.operands[2] << 8) |
                                          (pcec_message->content.msg.operands[3] << 0));
 
-	if(phy_addr_destination == (aml_read_reg32(P_AO_DEBUG_REG1) & 0xffff)){
-	    cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_ACTIVE;
-	}else{
-	    cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_INACTIVE;
-	}
+    if(phy_addr_destination == (aml_read_reg32(P_AO_DEBUG_REG1) & 0xffff)){
+        cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_ACTIVE;
+    }else{
+        cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_INACTIVE;
+    }
 }
 
 void cec_routing_information(cec_rx_message_t* pcec_message)
@@ -1548,16 +1548,16 @@ void cec_routing_information(cec_rx_message_t* pcec_message)
     phy_addr_destination = (unsigned int)((pcec_message->content.msg.operands[0] << 8) |
                                          (pcec_message->content.msg.operands[1] << 0));
 
-	if(phy_addr_destination == (aml_read_reg32(P_AO_DEBUG_REG1) & 0xffff)){
-	    cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_ACTIVE;
+    if(phy_addr_destination == (aml_read_reg32(P_AO_DEBUG_REG1) & 0xffff)){
+        cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_ACTIVE;
     msg[0] = ((index & 0xf) << 4) | CEC_BROADCAST_ADDR;
     msg[1] = CEC_OC_ROUTING_INFORMATION;
     msg[2] = phy_addr_ab;
     msg[3] = phy_addr_cd;
     cec_ll_tx(msg, 4);
-	}else{
-	    cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_INACTIVE;
-	}
+    }else{
+        cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_INACTIVE;
+    }
 }
 /***************************** cec middle level code end *****************************/
 
@@ -1647,7 +1647,7 @@ static void __exit cec_uninit(void)
 #if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
         free_irq(INT_AO_CEC, (void *)hdmitx_device);
 #endif
-    	kthread_stop(hdmitx_device->task_cec);
+        kthread_stop(hdmitx_device->task_cec);
         cec_global_info.cec_flag.cec_init_flag = 0;
     }
 
@@ -1851,10 +1851,10 @@ void cec_usrcmd_set_dispatch(const char * buf, size_t count)
         cec_usrcmd_set_deactive_source(param[1]);
         break;
     case REPORT_PHYSICAL_ADDRESS:    //17
-    	cec_usrcmd_set_report_physical_address();
-    	break;
+        cec_usrcmd_set_report_physical_address();
+        break;
     case SET_TEXT_VIEW_ON:          //18 LA
-    	cec_usrcmd_text_view_on(param[1]);
+        cec_usrcmd_text_view_on(param[1]);
         break;
     case POLLING_ONLINE_DEV:    //19 LA
         cec_polling_online_dev(param[1], &bool);
