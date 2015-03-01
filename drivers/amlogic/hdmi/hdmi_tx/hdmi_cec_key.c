@@ -54,6 +54,10 @@ __u16 cec_key_map[256] = {
     0 , KEY_MEDIA, 0, 0, KEY_POWER, 0, 0, 0,
     0 , KEY_BLUE, KEY_RED, KEY_GREEN, KEY_YELLOW, 0, 0, 0,//0x70
     0 , 0, 0, 0, 0, 0, 0, 0x2fd,
+    0 , 0, 0, 0, 0, 0, 0, 0,//0x80
+    0 , 0, 0, 0, 0, 0, 0, 0,
+    0 , KEY_MENU, 0, 0, 0, 0, KEY_CHANNEL, 0,//0x90
+    0 , 0, 0, 0, 0, 0, 0, 0,
 };
 
 static __u16 last_key = 0;

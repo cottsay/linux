@@ -462,7 +462,7 @@ void cec_input_handle_message(void)
                 initiator = cec_global_info.cec_rx_msg_buf.cec_rx_message[cec_global_info.cec_rx_msg_buf.rx_write_pos].content.msg.header & 0xf0;
                 if(opernum > 15 || follower == 0xf) break;
             }
-            cec_vendor_remote_btn_up_irq();
+            cec_vendor_remote_btn_down_irq();
             break;
         case CEC_OC_VENDOR_REMOTE_BUTTON_UP:
             // check valid msg
@@ -473,7 +473,7 @@ void cec_input_handle_message(void)
                 follower = cec_global_info.cec_rx_msg_buf.cec_rx_message[cec_global_info.cec_rx_msg_buf.rx_write_pos].content.msg.header & 0x0f;
                 if(opernum != 0 || follower == 0xf) break;
             }
-            cec_vendor_remote_btn_down_irq();
+            cec_vendor_remote_btn_up_irq();
             break;
         default:
             break;

@@ -497,6 +497,7 @@ typedef enum {
 
 typedef enum {
     CEC_VENDOR_UNKNOWN = 0,
+    CEC_VENDOR_SAMSUNG = 0x0000F0,
 } cec_vendor_id_e;
 
 void cec_enable_irq(void);
