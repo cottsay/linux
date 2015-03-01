@@ -56,7 +56,7 @@ __u16 cec_key_map[128] = {
     0 , 0, 0, 0, 0, 0, 0, 0x2fd,
 };
 
-__u16 last_key = 0;
+static __u16 last_key = 0;
 
 void cec_send_event(cec_rx_message_t* pcec_message)
 {

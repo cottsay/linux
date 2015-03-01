@@ -495,6 +495,10 @@ typedef enum {
     DEVICE_MENU_INACTIVE,    
 } cec_device_menu_state_e;
 
+typedef enum {
+    CEC_VENDOR_UNKNOWN = 0,
+} cec_vendor_id_e;
+
 void cec_enable_irq(void);
 void cec_disable_irq(void);
 
@@ -602,6 +606,9 @@ extern void cec_key_init(void);
 
 extern __u16 cec_key_map[];
 extern cec_global_info_t cec_global_info;
+
+void cec_vendor_remote_btn_up_irq(void);
+void cec_vendor_remote_btn_down_irq(void);
 
 #endif
 
