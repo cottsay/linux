@@ -321,6 +321,9 @@ void cec_node_init(hdmitx_dev_t* hdmitx_device)
             cec_menu_status_smp(DEVICE_MENU_ACTIVE);
             msleep(100);
 
+            cec_device_vendor_id_smp();
+            msleep(150);
+
             cec_global_info.cec_node_info[cec_global_info.my_node_index].menu_status = DEVICE_MENU_ACTIVE;
             cec_global_info.cec_node_info[cec_global_info.my_node_index].power_status = POWER_ON;
             break;
@@ -795,6 +798,17 @@ void cec_imageview_on_smp(void)
     }  
 }
 
+void cec_device_vendor_id_smp(void)
+{
+    unsigned char msg[2];
+    unsigned char index = cec_global_info.my_node_index;
+
+    msg[0] = ((index & 0xf) << 4) | CEC_TV_ADDR;
+    msg[1] = CEC_OC_GIVE_DEVICE_VENDOR_ID;
+
+    cec_ll_tx(msg, 2);
+}
+
 void cec_get_menu_language_smp(void)
 {
     unsigned char msg[2];
@@ -1104,6 +1118,17 @@ void cec_set_menu_language(cec_rx_message_t* pcec_message)
     }
 }
 
+void cec_set_device_vendor_id(cec_rx_message_t* pcec_message)
+{
+    unsigned char src_log_addr = (pcec_message->content.msg.header >> 4)&0xf;
+
+    if(0xf != src_log_addr) {
+        cec_global_info.cec_node_info[src_log_addr].vendor_id = (unsigned int)((pcec_message->content.msg.operands[0] << 16)  |
+                                                                               (pcec_message->content.msg.operands[1] <<  8)  |
+                                                                               (pcec_message->content.msg.operands[2]));
+    }
+}
+
 void cec_handle_message(cec_rx_message_t* pcec_message)
 {
     unsigned char   brdcst, opcode;
@@ -1142,6 +1167,7 @@ void cec_handle_message(cec_rx_message_t* pcec_message)
         case CEC_OC_DECK_STATUS:
             break;
         case CEC_OC_DEVICE_VENDOR_ID:
+            cec_set_device_vendor_id(pcec_message);
             break;
         case CEC_OC_FEATURE_ABORT:
             break;
