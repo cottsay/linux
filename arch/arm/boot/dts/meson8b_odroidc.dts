@@ -611,7 +611,7 @@
             vendor_name = "Amlogic";           /* Max Chars: 8     */
             vendor_id = <0x000000>;                 /* Refer to http://standards.ieee.org/develop/regauth/oui/oui.txt   */
             product_desc = "M8 MBox SKTv1";        /* Max Chars: 16    */
-            cec_osd_string = "Amlogic MBox";        /* Max Chars: 14    */
+            cec_osd_string = "MBox";               /* Max Chars: 14    */
         };
 
         pwr_ctrl: pwr_ctrl{
