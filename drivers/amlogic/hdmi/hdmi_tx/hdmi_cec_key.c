@@ -56,6 +56,8 @@ __u16 cec_key_map[128] = {
     0 , 0, 0, 0, 0, 0, 0, 0x2fd,
 };
 
+__u16 last_key = 0;
+
 void cec_send_event(cec_rx_message_t* pcec_message)
 {
     int i;
@@ -117,10 +119,9 @@ void cec_send_event_irq(void)
     }	
     
     input_event(cec_global_info.remote_cec_dev, EV_KEY, cec_key_map[operands_irq[0]], 1);
-    input_sync(cec_global_info.remote_cec_dev);	
-    input_event(cec_global_info.remote_cec_dev, EV_KEY, cec_key_map[operands_irq[0]], 0);
     input_sync(cec_global_info.remote_cec_dev);
-    hdmi_print(INF, CEC  ":key map:%d\n",cec_key_map[operands_irq[0]]);      		  	 	
+    last_key = cec_key_map[operands_irq[0]];
+    hdmi_print(INF, CEC  ":key down:%d\n", cec_key_map[operands_irq[0]]);
 }
 
 void cec_user_control_pressed_irq(void)
@@ -132,6 +133,13 @@ void cec_user_control_pressed_irq(void)
 void cec_user_control_released_irq(void)  
 {
     hdmi_print(INF, CEC  ": Key released \n");
+    if (last_key > 0)
+    {
+        input_event(cec_global_info.remote_cec_dev, EV_KEY, last_key, 0);
+        input_sync(cec_global_info.remote_cec_dev);
+        hdmi_print(INF, CEC  ":key up:%d\n", last_key);
+        last_key = 0;
+    }
 } 
 
 void cec_user_control_pressed(cec_rx_message_t* pcec_message)
