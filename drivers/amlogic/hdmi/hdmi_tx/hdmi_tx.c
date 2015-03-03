@@ -590,6 +590,13 @@ static ssize_t store_cec_osd_name(struct device *dev, struct device_attribute *a
     return count;
 }
 
+static ssize_t show_cec_phy_addr(struct device * dev, struct device_attribute *attr, char * buf)
+{
+    int pos=0;
+    pos+=snprintf(buf+pos, PAGE_SIZE, "%hu\n", aml_read_reg32(P_AO_DEBUG_REG1) & 0xFFFF);
+    return pos;
+}
+
 /*aud_mode attr*/
 static ssize_t show_aud_mode(struct device * dev, struct device_attribute *attr, char * buf)
 {
@@ -981,6 +988,7 @@ static DEVICE_ATTR(cec_config, S_IWUSR | S_IRUGO | S_IWGRP, show_cec_config, sto
 //static DEVICE_ATTR(cec_config, S_IWUGO | S_IRUGO , NULL, store_cec_config);
 static DEVICE_ATTR(cec_lang_config, S_IWUSR | S_IRUGO | S_IWGRP, show_cec_lang_config, store_cec_lang_config);
 static DEVICE_ATTR(cec_osd_name, S_IWUSR | S_IRUGO | S_IWGRP, show_cec_osd_name, store_cec_osd_name);
+static DEVICE_ATTR(cec_phy_addr, S_IRUGO, show_cec_phy_addr, NULL);
 
 /*****************************
 *    hdmitx display client interface
@@ -1625,6 +1633,7 @@ static int amhdmitx_probe(struct platform_device *pdev)
     ret=device_create_file(hdmitx_dev, &dev_attr_cec_config);
     ret=device_create_file(hdmitx_dev, &dev_attr_cec_lang_config);
     ret=device_create_file(hdmitx_dev, &dev_attr_cec_osd_name);
+    ret=device_create_file(hdmitx_dev, &dev_attr_cec_phy_addr);
 
     if (hdmitx_dev == NULL) {
         hdmi_print(ERR, SYS "device_create create error\n");
