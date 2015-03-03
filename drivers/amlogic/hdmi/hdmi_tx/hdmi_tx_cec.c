@@ -687,8 +687,9 @@ unsigned char check_cec_msg_valid(const cec_rx_message_t* pcec_message)
             break;
     }
 
-    if ((rt == 0) & (opcode != 0)){
+    if (rt == 0){
         hdmirx_cec_dbg_print("CEC: opcode & opernum not match: %x, %x\n", opcode, opernum);
+        hdmi_print(INF, CEC "opcode & opernum not match: %x, %x\n", opcode, opernum);
     }
     return rt;
 }
