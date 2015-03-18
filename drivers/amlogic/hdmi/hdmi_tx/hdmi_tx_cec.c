@@ -154,8 +154,10 @@ static void hdmitx_cec_late_resume(struct early_suspend *h)
 #define CEC_MISC_ECHO(...)
 #else
 #define CEC_MISC_ECHO(...) cec_misc_echo( __VA_ARGS__ )
-#define CEC_IOC_MAGIC 'c'
-#define CEC_IOC_SETLADDR _IOW(CEC_IOC_MAGIC, 0, unsigned int)
+#define CEC_IOC_SETLADDR_MAGIC 'c'
+#define CEC_IOC_SETECHO_MAGIC 'e'
+#define CEC_IOC_SETLADDR _IOW(CEC_IOC_SETLADDR_MAGIC, 0, unsigned int)
+#define CEC_IOC_SETECHO _IOW(CEC_IOC_SETECHO_MAGIC, 0, unsigned int)
 #define CEC_MISC_BUFF_LEN 16
 
 static unsigned char misc_reg = 0;
@@ -168,6 +170,9 @@ struct
     unsigned char write_pos;
     spinlock_t pos_lock;
     wait_queue_head_t wq;
+    struct semaphore if_lock;
+    struct semaphore if_count;
+    atomic_t local_echo;
 } cec_misc_buffer;
 
 void cec_misc_init(void)
@@ -175,6 +180,8 @@ void cec_misc_init(void)
     init_waitqueue_head(&cec_misc_buffer.wq);
     cec_misc_buffer.read_pos = 0;
     cec_misc_buffer.write_pos = 0;
+    sema_init(&cec_misc_buffer.if_lock, 1);
+    sema_init(&cec_misc_buffer.if_count, 0);
 }
 
 void cec_misc_echo(unsigned char *msg, unsigned char msg_length)
@@ -200,11 +207,49 @@ void cec_misc_echo(unsigned char *msg, unsigned char msg_length)
 
 static int cec_misc_open(struct inode *inode, struct file *file)
 {
+    if(down_interruptible(&cec_misc_buffer.if_lock) != 0)
+        return -EBUSY;
+
+    up(&cec_misc_buffer.if_count);
+
+    if(cec_misc_buffer.if_count.count == 1)
+    {
+#if MESON_CPU_TYPE == MESON_CPU_TYPE_MESON6
+        hdmi_wr_reg(CEC0_BASE_ADDR+CEC_LOGICAL_ADDR1, (0x1 << 4) | CEC_UNREGISTERED_ADDR);
+#endif
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+        aocec_wr_reg(CEC_LOGICAL_ADDR1, (0x1 << 4) | CEC_UNREGISTERED_ADDR);
+#endif
+
+        hdmi_print(INF, CEC "Misc opened\n");
+    }
+
+    up(&cec_misc_buffer.if_lock);
+
     return 0;
 }
 
 static int cec_misc_release(struct inode *inode, struct file *file)
 {
+    if(down_interruptible(&cec_misc_buffer.if_lock) != 0)
+        return -EBUSY;
+
+    down_trylock(&cec_misc_buffer.if_count);
+
+    if(cec_misc_buffer.if_count.count == 0)
+    {
+#if MESON_CPU_TYPE == MESON_CPU_TYPE_MESON6
+        hdmi_wr_reg(CEC0_BASE_ADDR+CEC_LOGICAL_ADDR1, 0x0);
+#endif
+#if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
+        aocec_wr_reg(CEC_LOGICAL_ADDR1, 0x0);
+#endif
+
+        hdmi_print(INF, CEC "Misc closed\n");
+    }
+
+    up(&cec_misc_buffer.if_lock);
+
     return 0;
 }
 
@@ -212,6 +257,8 @@ static ssize_t cec_misc_read(struct file *file, char __user *buf, size_t count, 
 {
     unsigned long spin_flags;
     size_t ret;
+    uint8_t msg[MAX_MSG];
+    uint8_t msg_size;
 
     if(wait_event_interruptible(cec_misc_buffer.wq,
             cec_misc_buffer.read_pos != cec_misc_buffer.write_pos)) {
@@ -230,21 +277,22 @@ static ssize_t cec_misc_read(struct file *file, char __user *buf, size_t count, 
         hdmi_print(LOW, CEC "Reading %d bytes to user (have room for %d)\n", cec_misc_buffer.cec_message_length[cec_misc_buffer.read_pos], count);
     }
 
-    count = cec_misc_buffer.cec_message_length[cec_misc_buffer.read_pos];
-    ret = copy_to_user(buf, cec_misc_buffer.cec_message[cec_misc_buffer.read_pos], count);
-    if(ret != 0) {
-        spin_unlock_irqrestore(&cec_misc_buffer.pos_lock, spin_flags);
-        hdmi_print(IMP, CEC "Failed to copy %d of %d bytes to user\n", ret, count);
-        return -EFAULT;
-    }
+    msg_size = cec_misc_buffer.cec_message_length[cec_misc_buffer.read_pos];
+    memcpy(msg, cec_misc_buffer.cec_message[cec_misc_buffer.read_pos], msg_size);
 
     (cec_misc_buffer.read_pos == CEC_MISC_BUFF_LEN - 1) ? (cec_misc_buffer.read_pos = 0) : (cec_misc_buffer.read_pos++);
 
     spin_unlock_irqrestore(&cec_misc_buffer.pos_lock, spin_flags);
 
+    ret = copy_to_user(buf, msg, msg_size);
+    if(ret != 0) {
+        hdmi_print(IMP, CEC "Failed to copy %d of %d bytes to user\n", ret, msg_size);
+        return -EFAULT;
+    }
+
     hdmi_print(LOW, CEC "MISC Read\n");
 
-    return count;
+    return msg_size;
 }
 
 static ssize_t cec_misc_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
@@ -261,34 +309,51 @@ static ssize_t cec_misc_write(struct file *file, const char __user *buf, size_t 
         return -EFAULT;
     }
 
-    CEC_MISC_ECHO(msg, count);
     if(cec_ll_tx_polling(msg, count) != 1) {
         hdmi_print(IMP, CEC "Message transmit failed\n");
         return -1;
     }
+
+    if(atomic_read(&cec_misc_buffer.local_echo) != 0)
+	    CEC_MISC_ECHO(msg, count);
+
+    register_cec_rx_msg(msg, count);
+    wake_up(&hdmitx_device->cec_wait_rx);
 
     return count;
 }
 
 static long cec_misc_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-    unsigned char logical_addr;
+    unsigned char data;
 
     switch(cmd) {
     case CEC_IOC_SETLADDR:
-        if(get_user(logical_addr, (unsigned char __user *)arg)) {
+        if(get_user(data, (unsigned char __user *)arg)) {
             hdmi_print(IMP, CEC "Failed to get logical addr from user\n");
             return -EFAULT;
         }
 
-        cec_global_info.cec_node_info[cec_global_info.my_node_index].log_addr = logical_addr;
 #if MESON_CPU_TYPE == MESON_CPU_TYPE_MESON6
-        hdmi_wr_reg(CEC0_BASE_ADDR+CEC_LOGICAL_ADDR0, (0x1 << 4) | logical_addr);
+        hdmi_wr_reg(CEC0_BASE_ADDR+CEC_LOGICAL_ADDR1, (0x1 << 4) | data);
 #endif
 #if MESON_CPU_TYPE >= MESON_CPU_TYPE_MESON8
-        aocec_wr_reg(CEC_LOGICAL_ADDR0, (0x1 << 4) | logical_addr);
+        aocec_wr_reg(CEC_LOGICAL_ADDR1, (0x1 << 4) | data);
 #endif
-        hdmi_print(INF, CEC "Set logical address: %d\n", logical_addr);
+
+        hdmi_print(INF, CEC "Set misc logical address: %d\n", data);
+
+        return 0;
+    case CEC_IOC_SETECHO:
+        if(get_user(data, (unsigned char __user *)arg)) {
+            hdmi_print(IMP, CEC "Failed to get echo value from user\n");
+            return -EFAULT;
+        }
+
+        atomic_set(&cec_misc_buffer.local_echo, data);
+
+        hdmi_print(INF, CEC "Set misc local echo: %d\n", data);
+
         return 0;
     }
 
